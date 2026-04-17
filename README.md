@@ -8,136 +8,104 @@
 
 \- Group: 232/1он
 
-## Практичне заняття №2 — NestJS + PostgreSQL + Redis
-
-## Структура репозиторію
+## Практичне заняття №4 — DTO + class-validator + Pipes
+ 
+### Структура репозиторію
 ```
 .
 ├── src/
 │   ├── categories/
+│   │   ├── dto/
+│   │   │   ├── create-category.dto.ts
+│   │   │   └── update-category.dto.ts
 │   │   ├── category.entity.ts
 │   │   ├── categories.module.ts
 │   │   ├── categories.service.ts
 │   │   └── categories.controller.ts
 │   ├── products/
+│   │   ├── dto/
+│   │   │   ├── create-product.dto.ts
+│   │   │   └── update-product.dto.ts
 │   │   ├── product.entity.ts
 │   │   ├── products.module.ts
 │   │   ├── products.service.ts
 │   │   └── products.controller.ts
+│   ├── common/
+│   │   └── pipes/
+│   │   	└── trim.pipe.ts
 │   ├── migrations/
-│   │   ├── 1700000001-CreateTables.ts
-│   │   └── <timestamp>-AddIsActiveToProducts.ts
 │   ├── data-source.ts
+│   ├── main.ts
 │   └── app.module.ts
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
-
 ```
  
-## Запуск проекту
+### Запуск проекту
 ```bash
-cp .env.example .env   # налаштувати значення
+cp .env.example .env
 docker compose up --build
 ```
  
-### API Endpoints
-| Method | URL | Опис |
-|--------|-----|------|
-| GET | /api/categories | Список категорій |
-| GET | /api/categories/:id | Одна категорія |
-| POST | /api/categories | Створити категорію |
-| PATCH | /api/categories/:id | Оновити категорію |
-| DELETE | /api/categories/:id | Видалити категорію |
-| GET | /api/products | Список продуктів |
-| GET | /api/products/:id | Один продукт |
-| POST | /api/products | Створити продукт |
-| PATCH | /api/products/:id | Оновити продукт |
-| DELETE | /api/products/:id | Видалити продукт |
- 
-### Перевірка міграцій
+### Тест валідації — порожнє ім'я категорії
 ```text
-List of relations
- Schema |    Name    | Type  |  Owner
---------+------------+-------+----------
- public | categories | table | nestuser
- public | migrations | table | nestuser
- public | products   | table | nestuser
-(3 rows)
+Invoke-RestMethod -Uri "http://localhost:3000/api/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": ""}'
+Invoke-RestMethod : {"message":["name must be longer than or equal to 2 characters"],"error":"Bad Request","statusCode":400}
+At line:1 char:1
++ Invoke-RestMethod -Uri "http://localhost:3000/api/categories" -Method ...
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
 ```
  
-### Тест створення категорії
+### Тест валідації — від'ємна ціна продукту
 ```text
-{
-    "id":  6,
-    "name":  "Smartphones",
-    "description":  "Mobile devices",
-    "createdAt":  "2026-03-29T22:19:11.284Z"
-}
+Invoke-RestMethod -Uri "http://localhost:3000/api/products" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Test", "price": -5}'
+Invoke-RestMethod : {"message":["price must not be less than 0.01"],"error":"Bad Request","statusCode":400}
+At line:1 char:1
++ Invoke-RestMethod -Uri "http://localhost:3000/api/products" -Method P ...
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
 ```
  
-### Тест створення продукту
+### Тест валідації — зайве поле
 ```text
-{
-    "id":  3,
-    "name":  "MacBook Air",
-    "description":  null,
-    "price":  1200,
-    "stock":  15,
-    "isActive":  true,
-    "category":  {
-                     "id":  1
-                 },
-    "createdAt":  "2026-03-29T22:23:16.831Z",
-    "updatedAt":  "2026-03-29T22:23:16.831Z"
-}
+Invoke-RestMethod -Uri "http://localhost:3000/api/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Test", "isAdmin": true}'
+Invoke-RestMethod : {"message":["property isAdmin should not exist"],"error":"Bad Request","statusCode":400}
+At line:1 char:1
++ Invoke-RestMethod -Uri "http://localhost:3000/api/categories" -Method ...
++ ~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
 ```
  
-### Тест отримання продуктів
+### Тест TrimPipe
 ```text
-{
-    "value":  [
-                  {
-                      "id":  1,
-                      "name":  "iPhone 15",
-                      "description":  null,
-                      "price":  "899.99",
-                      "stock":  45,
-                      "isActive":  true,
-                      "category":  {
-                                       "id":  1,
-                                       "name":  "Electronics",
-                                       "description":  "Gadgets and devices",
-                                       "createdAt":  "2026-03-29T21:56:51.662Z"
-                                   },
-                      "createdAt":  "2026-03-29T22:12:24.943Z",
-                      "updatedAt":  "2026-03-29T22:14:16.169Z"
-                  },
-                  {
-                      "id":  3,
-                      "name":  "MacBook Air",
-                      "description":  null,
-                      "price":  "1200.00",
-                      "stock":  15,
-                      "isActive":  true,
-                      "category":  {
-                                       "id":  1,
-                                       "name":  "Electronics",
-                                       "description":  "Gadgets and devices",
-                                       "createdAt":  "2026-03-29T21:56:51.662Z"
-                                   },
-                      "createdAt":  "2026-03-29T22:23:16.831Z",
-                      "updatedAt":  "2026-03-29T22:23:16.831Z"
-                  }
-              ],
-    "Count":  2
-}
+Invoke-RestMethod -Uri "http://localhost:3000/api/categories" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "  Trimmed  "}'
+
+id name    description createdAt
+-- ----    ----------- ---------
+ 8 Trimmed             2026-04-17T17:34:15.965Z
 ```
  
-### Тест 404
+### Тест валідне створення продукту
 ```text
-Invoke-RestMethod : {"message":"Product #999 not found","error":"Not Found","statusCode":404}
+Invoke-RestMethod -Uri "http://localhost:3000/api/products" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"name": "Valid Product", "price": 99.99, "stock": 10, "categoryId": 1}'
+
+
+id          : 4
+name        : Valid Product
+description :
+price       : 99.99
+stock       : 10
+isActive    : True
+category    : @{id=1}
+createdAt   : 2026-04-17T17:21:46.269Z
+updatedAt   : 2026-04-17T17:21:46.269Z
 ```
+
 
 
 
