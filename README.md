@@ -8,23 +8,16 @@
 
 \- Group: 232/1он
 
-## Практичне заняття №5 — JWT Authentication + Guards + RBAC
+## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
  
 ### Структура репозиторію
 ```
 .
 ├── src/
-│   ├── auth/
-│   │   ├── dto/
-│   │   │   ├── register.dto.ts
-│   │   │   └── login.dto.ts
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   └── auth.controller.ts
-│   ├── users/
-│   │   ├── user.entity.ts
-│   │   ├── users.module.ts
-│   │   └── users.service.ts
+│   ├── auth/ ...
+│   ├── users/ ...
+│   ├── categories/ ...
+│   ├── products/ ...
 │   ├── common/
 │   │   ├── enums/
 │   │   │   └── role.enum.ts
@@ -34,14 +27,17 @@
 │   │   ├── decorators/
 │   │   │   ├── current-user.decorator.ts
 │   │   │   └── roles.decorator.ts
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   └── transform.interceptor.ts
+│   │   ├── filters/
+│   │   │   └── http-exception.filter.ts
 │   │   └── pipes/
 │   │   	└── trim.pipe.ts
-│   ├── categories/ ...
-│   ├── products/ ...
 │   ├── migrations/
-│   ├── data-source.ts
 │   ├── main.ts
 │   └── app.module.ts
+├── swagger-screenshot.png
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -53,79 +49,46 @@ cp .env.example .env
 docker compose up --build
 ```
  
-### API Endpoints
-| Method | URL | Auth | Role |
-|--------|-----|------|------|
-| POST | /auth/register | - | - |
-| POST | /auth/login | - | - |
-| GET | /api/categories | - | - |
-| POST | /api/categories | JWT | admin |
-| GET | /api/products | - | - |
-| POST | /api/products | JWT | admin |
-| PATCH | /api/products/:id | JWT | admin |
-| DELETE | /api/products/:id | JWT | admin |
+### Swagger UI
+http://localhost:3000/api/docs
  
-### Тест реєстрації
-```text
-<вивід curl POST /auth/register>
--Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email": "user@test.com", "password": "password123", "name": "User"}'  
-
-
-id        : 2
-email     : user@test.com
-name      : User
-role      : user
-createdAt : 2026-04-20T18:49:19.487Z
+![Swagger](swagger-screenshot.png)
+ 
+### Формат успішної відповіді
+```json
+{
+  "data": { ... },
+  "statusCode": 200,
+  "timestamp": "2025-01-15T10:30:00.000Z"
+}
 ```
  
-### Тест логіну
-```text
-<вивід curl POST /auth/login>
--Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email": "user@test.com", "password": "password123"}' 
-
-accessToken
------------
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoidXNlckB0ZXN0LmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc2NzExMjcyLCJleHAiOjE3NzY3MTQ4NzJ9.TmNl2QkxOR7Ff04vbxgELff4rSXqzggHNp7AkMOjszA
+### Формат помилки
+```json
+{
+  "error": {
+	"code": 400,
+	"message": "Validation failed",
+	"details": ["name must be longer..."],
+	"traceId": "a1b2c3..."
+  },
+  "timestamp": "2025-01-15T10:31:00.000Z"
+}
 ```
  
-### Тест 401 — запит без токена
+### Приклад логів (LoggingInterceptor)
 ```text
-<вивід curl POST /api/products без Authorization>
-
-id          : 1
-name        : iPhone 15
-description :
-price       : 899.99
-stock       : 45
-isActive    : True
-category    : @{id=1; name=Electronics; description=Gadgets and devices; createdAt=2026-03-29T21:56:51.662Z}
-createdAt   : 2026-03-29T22:12:24.943Z
-updatedAt   : 2026-03-29T22:14:16.169Z
+[Nest] 29  - 04/28/2026, 8:21:35 PM     LOG [HTTP] POST /api/products — 201 — 40ms
+app-1  | [Nest] 29  - 04/28/2026, 8:23:32 PM   ERROR [Exception] [9fd70975-92ad-4325-8d06-4187c46d3d96] POST /api/products — 400 — Validation failed
 ```
  
-### Тест 403 — запит з роллю user
+### Тест помилки з traceId
 ```text
-<вивід curl POST /api/products з токеном user>
--Method POST -Headers @{"Content-Type"="application/json"; "Authorization"="Bearer $USER_TOKEN"} -Body '{"name": "Blocked Product", "price": 99}'
-Invoke-RestMethod : {"message":"Missing authorization token","error":"Unauthorized","statusCode":401}
+Invoke-RestMethod -Uri "http://localhost:3000/api/products/999" -Method GET
+Invoke-RestMethod : {"error":{"code":404,"message":"Product #999 not found","traceId":"aece0e46-5957-4436-bdac-b765a473c43e"},"timestamp":"2026-04-28T20:26:20.911Z"}
 At line:1 char:1
-+ Invoke-RestMethod -Uri "http://localhost:3000/api/products" -Method P ...
++ Invoke-RestMethod -Uri "http://localhost:3000/api/products/999" -Meth ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebException
     + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
-
-```
- 
-### Тест успішного створення від admin
-```text
-<вивід curl POST /api/products з токеном admin>
--Method POST -Headers @{"Content-Type"="application/json"; "Authorization"="Bearer $ADMIN_TOKEN"} -Body '{"name": "MacBook Pro", "price": 2499.99, "stock": 10}'
-id          : 5
-name        : MacBook Pro
-description :
-price       : 2499.99
-stock       : 10
-isActive    : True
-createdAt   : 2026-04-20T19:00:25.004Z
-updatedAt   : 2026-04-20T19:00:25.004Z
 ```
