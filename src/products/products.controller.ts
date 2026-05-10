@@ -12,21 +12,27 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
+import { Query } from '@nestjs/common';
+import { ProductQueryDto }
+  from './dto/product-query.dto';
 
 @ApiTags('Products')
 @Controller('api/products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get()
-  @ApiOperation({
-    summary: 'Отримати всі продукти',
-    description: 'Повертає список усіх продуктів з вкладеними категоріями. Публічний ендпоінт.'
-  })
-  @ApiResponse({ status: 200, description: 'Список продуктів' })
-  findAll() {
-    return this.productsService.findAll();
-  }
+@Get()
+@ApiOperation({
+  summary: 'Отримати продукти з пагінацією',
+  description:
+	'Повертає список продуктів з мета-інформацією. ' +
+	'Підтримує пагінацію, сортування, фільтрацію ' +
+	'та пошук.',
+})
+findAll(@Query() query: ProductQueryDto) {
+  return this.productsService.findAll(query);
+}
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Отримати продукт за ID' })
