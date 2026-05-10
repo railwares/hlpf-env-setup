@@ -8,87 +8,73 @@
 
 \- Group: 232/1он
 
-## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
- 
-### Структура репозиторію
-```
-.
-├── src/
-│   ├── auth/ ...
-│   ├── users/ ...
-│   ├── categories/ ...
-│   ├── products/ ...
-│   ├── common/
-│   │   ├── enums/
-│   │   │   └── role.enum.ts
-│   │   ├── guards/
-│   │   │   ├── jwt-auth.guard.ts
-│   │   │   └── roles.guard.ts
-│   │   ├── decorators/
-│   │   │   ├── current-user.decorator.ts
-│   │   │   └── roles.decorator.ts
-│   │   ├── interceptors/
-│   │   │   ├── logging.interceptor.ts
-│   │   │   └── transform.interceptor.ts
-│   │   ├── filters/
-│   │   │   └── http-exception.filter.ts
-│   │   └── pipes/
-│   │   	└── trim.pipe.ts
-│   ├── migrations/
-│   ├── main.ts
-│   └── app.module.ts
-├── swagger-screenshot.png
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
+## Практичне заняття №7 — Redis + Pagination + Filtering
  
 ### Запуск проекту
 ```bash
 cp .env.example .env
 docker compose up --build
+docker compose run --rm app npm run seed
 ```
  
-### Swagger UI
-http://localhost:3000/api/docs
+### API: GET /api/products
  
-![Swagger](swagger-screenshot.png)
+| Параметр | Тип | Default | Опис |
+|----------|-----|---------|------|
+| page | number | 1 | Номер сторінки |
+| pageSize | number | 10 | Елементів на сторінку (max 100) |
+| sort | string | created_at | Поле сортування |
+| order | asc/desc | desc | Напрямок |
+| categoryId | number | - | Фільтр за категорією |
+| minPrice | number | - | Мінімальна ціна |
+| maxPrice | number | - | Максимальна ціна |
+| search | string | - | Пошук за назвою (ILIKE) |
  
-### Формат успішної відповіді
-```json
-{
-  "data": { ... },
-  "statusCode": 200,
-  "timestamp": "2025-01-15T10:30:00.000Z"
-}
-```
- 
-### Формат помилки
-```json
-{
-  "error": {
-	"code": 400,
-	"message": "Validation failed",
-	"details": ["name must be longer..."],
-	"traceId": "a1b2c3..."
-  },
-  "timestamp": "2025-01-15T10:31:00.000Z"
-}
-```
- 
-### Приклад логів (LoggingInterceptor)
+### Тест пагінації
 ```text
-[Nest] 29  - 04/28/2026, 8:21:35 PM     LOG [HTTP] POST /api/products — 201 — 40ms
-app-1  | [Nest] 29  - 04/28/2026, 8:23:32 PM   ERROR [Exception] [9fd70975-92ad-4325-8d06-4187c46d3d96] POST /api/products — 400 — Validation failed
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"data":{"items":[{"id":21,"name":"iPhone 16 v3","description":null,"price":"1019.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:3...      
+RawContent        : HTTP/1.1 200 OK
+                    Connection: keep-alive
+                    Keep-Alive: timeout=5
+                    Content-Length: 1501
+                    Content-Type: application/json; charset=utf-8
+                    Date: Sun, 10 May 2026 00:53:48 GMT
+                    ETag: W/"5dd-YCF+sIqvLWNbpGtZs...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Keep-Alive, timeout=5], [Content-Length, 1501], [Content-Type, application/json; charset=utf-8]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 1501
 ```
  
-### Тест помилки з traceId
+### Тест фільтрації
 ```text
-Invoke-RestMethod -Uri "http://localhost:3000/api/products/999" -Method GET
-Invoke-RestMethod : {"error":{"code":404,"message":"Product #999 not found","traceId":"aece0e46-5957-4436-bdac-b765a473c43e"},"timestamp":"2026-04-28T20:26:20.911Z"}
-At line:1 char:1
-+ Invoke-RestMethod -Uri "http://localhost:3000/api/products/999" -Meth ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-RestMethod], WebException
-    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeRestMethodCommand
+curl.exe -s "http://localhost:3000/api/products?categoryId=1&minPrice=500"
+{"data":{"items":[{"id":24,"name":"iPad Air v3","description":null,"price":"619.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.769Z","updatedAt":"2026-05-10T00:33:07.769Z"},{"id":23,"name":"MacBook Pro v3","description":null,"price":"2519.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.767Z","updatedAt":"2026-05-10T00:33:07.767Z"},{"id":22,"name":"Galaxy S24 v3","description":null,"price":"869.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.766Z","updatedAt":"2026-05-10T00:33:07.766Z"},{"id":21,"name":"iPhone 16 v3","description":null,"price":"1019.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.765Z","updatedAt":"2026-05-10T00:33:07.765Z"},{"id":14,"name":"iPad Air v2","description":null,"price":"609.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.756Z","updatedAt":"2026-05-10T00:33:07.756Z"},{"id":13,"name":"MacBook Pro v2","description":null,"price":"2509.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.755Z","updatedAt":"2026-05-10T00:33:07.755Z"},{"id":12,"name":"Galaxy S24 v2","description":null,"price":"859.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.753Z","updatedAt":"2026-05-10T00:33:07.753Z"},{"id":11,"name":"iPhone 16 v2","description":null,"price":"1009.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.751Z","updatedAt":"2026-05-10T00:33:07.751Z"},{"id":4,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.738Z","updatedAt":"2026-05-10T00:33:07.738Z"},{"id":3,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.736Z","updatedAt":"2026-05-10T00:33:07.736Z"}],"meta":{"page":1,"pageSize":10,"total":12,"totalPages":2}},"statusCode":200,"timestamp":"2026-05-10T00:59:03.567Z"}
 ```
+ 
+### Тест пошуку
+```text
+{"data":{"items":[{"id":23,"name":"MacBook Pro v3","description":null,"price":"2519.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.767Z","updatedAt":"2026-05-10T00:33:07.767Z"},{"id":13,"name":"MacBook Pro v2","description":null,"price":"2509.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.755Z","updatedAt":"2026-05-10T00:33:07.755Z"},{"id":3,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.736Z","updatedAt":"2026-05-10T00:33:07.736Z"}],"meta":{"page":1,"pageSize":10,"total":3,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-10T00:59:16.901Z"}
+```
+ 
+### Тест кешування (Redis)
+```text
+1) "products:{\"page\":1,\"pageSize\":10,\"sort\":\"createdAt\",\"order\":\"desc\",\"search\":\"mac\"}"  
+```
+ 
+### Тест інвалідації кешу
+```text
+data                                                                                                                                                 statusCode timestamp
+----                                                                                                                                                 ---------- ---------
+@{id=31; name=Fresh Product; description=; price=42; stock=0; isActive=True; createdAt=2026-05-10T00:50:02.583Z; updatedAt=2026-05-10T00:50:02.583Z}        201 2026-05-10T00:50:02.596Z
+
+
+PS C:\Users\coolt\hlpf-env-setup> docker compose exec redis redis-cli KEYS "products:*"
+(empty array)
+```
+
