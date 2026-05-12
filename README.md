@@ -8,73 +8,82 @@
 
 \- Group: 232/1он
 
-## Практичне заняття №7 — Redis + Pagination + Filtering
+## MiniShop API — Фінальний проєкт
  
-### Запуск проекту
+REST API інтернет-магазину на NestJS + PostgreSQL + Redis.
+ 
+### Технології
+- NestJS + TypeScript
+- PostgreSQL + TypeORM (міграції, QueryBuilder)
+- Redis (кешування з інвалідацією)
+- JWT автентифікація + RBAC авторизація
+- class-validator + class-transformer
+- Swagger / OpenAPI
+ 
+### Запуск
 ```bash
 cp .env.example .env
 docker compose up --build
 docker compose run --rm app npm run seed
 ```
  
-### API: GET /api/products
+### Swagger UI
+http://localhost:3000/api/docs
  
-| Параметр | Тип | Default | Опис |
-|----------|-----|---------|------|
-| page | number | 1 | Номер сторінки |
-| pageSize | number | 10 | Елементів на сторінку (max 100) |
-| sort | string | created_at | Поле сортування |
-| order | asc/desc | desc | Напрямок |
-| categoryId | number | - | Фільтр за категорією |
-| minPrice | number | - | Мінімальна ціна |
-| maxPrice | number | - | Максимальна ціна |
-| search | string | - | Пошук за назвою (ILIKE) |
+### API Endpoints
  
-### Тест пагінації
+#### Auth
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| POST | /auth/register | - | Реєстрація |
+| POST | /auth/login | - | Логін → JWT |
+ 
+#### Categories
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| GET | /api/categories | - | Список |
+| GET | /api/categories/:id | - | Одна |
+| POST | /api/categories | admin | Створити |
+| PATCH | /api/categories/:id | admin | Оновити |
+| DELETE | /api/categories/:id | admin | Видалити |
+ 
+#### Products
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| GET | /api/products | - | Список + pagination + filter |
+| GET | /api/products/:id | - | Один |
+| POST | /api/products | admin | Створити |
+| PATCH | /api/products/:id | admin | Оновити |
+| DELETE | /api/products/:id | admin | Видалити |
+ 
+#### Orders
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| POST | /api/orders | user | Створити замовлення |
+| GET | /api/orders | user | Мої / Всі (admin) |
+| GET | /api/orders/:id | user | Одне (ownership) |
+| PATCH | /api/orders/:id/status | admin | Змінити статус |
+| DELETE | /api/orders/:id | admin | Видалити |
+ 
+### Тест створення замовлення
 ```text
-StatusCode        : 200
-StatusDescription : OK
-Content           : {"data":{"items":[{"id":21,"name":"iPhone 16 v3","description":null,"price":"1019.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:3...      
-RawContent        : HTTP/1.1 200 OK
-                    Connection: keep-alive
-                    Keep-Alive: timeout=5
-                    Content-Length: 1501
-                    Content-Type: application/json; charset=utf-8
-                    Date: Sun, 10 May 2026 00:53:48 GMT
-                    ETag: W/"5dd-YCF+sIqvLWNbpGtZs...
-Forms             : {}
-Headers           : {[Connection, keep-alive], [Keep-Alive, timeout=5], [Content-Length, 1501], [Content-Type, application/json; charset=utf-8]...}
-Images            : {}
-InputFields       : {}
-Links             : {}
-ParsedHtml        : mshtml.HTMLDocumentClass
-RawContentLength  : 1501
+{"data":{"id":2,"status":"pending","totalPrice":"999.00","user":{"id":1},"items":[{"id":3,"quantity":1,"price":"999.00","product":{"id":1,"name":"iPhone 16","description":null,"price":"999.00","stock":47,"isActive":true,"createdAt":"2026-05-10T00:33:07.732Z","updatedAt":"2026-05-12T21:06:48.195Z"}}],"createdAt":"2026-05-12T21:06:48.195Z"},"statusCode":201,"timestamp":"2026-05-12T21:06:48.213Z"}
 ```
  
-### Тест фільтрації
+### Тест ownership (403)
 ```text
-curl.exe -s "http://localhost:3000/api/products?categoryId=1&minPrice=500"
-{"data":{"items":[{"id":24,"name":"iPad Air v3","description":null,"price":"619.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.769Z","updatedAt":"2026-05-10T00:33:07.769Z"},{"id":23,"name":"MacBook Pro v3","description":null,"price":"2519.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.767Z","updatedAt":"2026-05-10T00:33:07.767Z"},{"id":22,"name":"Galaxy S24 v3","description":null,"price":"869.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.766Z","updatedAt":"2026-05-10T00:33:07.766Z"},{"id":21,"name":"iPhone 16 v3","description":null,"price":"1019.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.765Z","updatedAt":"2026-05-10T00:33:07.765Z"},{"id":14,"name":"iPad Air v2","description":null,"price":"609.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.756Z","updatedAt":"2026-05-10T00:33:07.756Z"},{"id":13,"name":"MacBook Pro v2","description":null,"price":"2509.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.755Z","updatedAt":"2026-05-10T00:33:07.755Z"},{"id":12,"name":"Galaxy S24 v2","description":null,"price":"859.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.753Z","updatedAt":"2026-05-10T00:33:07.753Z"},{"id":11,"name":"iPhone 16 v2","description":null,"price":"1009.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.751Z","updatedAt":"2026-05-10T00:33:07.751Z"},{"id":4,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.738Z","updatedAt":"2026-05-10T00:33:07.738Z"},{"id":3,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.736Z","updatedAt":"2026-05-10T00:33:07.736Z"}],"meta":{"page":1,"pageSize":10,"total":12,"totalPages":2}},"statusCode":200,"timestamp":"2026-05-10T00:59:03.567Z"}
+{"error":{"code":403,"message":"You can only view your own orders","traceId":"6cbbe8aa-7fd4-4f95-a9ff-dc1020b28a46"},"timestamp":"2026-05-12T21:16:57.069Z"}
 ```
  
-### Тест пошуку
+### Тест зміни статусу
 ```text
-{"data":{"items":[{"id":23,"name":"MacBook Pro v3","description":null,"price":"2519.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.767Z","updatedAt":"2026-05-10T00:33:07.767Z"},{"id":13,"name":"MacBook Pro v2","description":null,"price":"2509.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.755Z","updatedAt":"2026-05-10T00:33:07.755Z"},{"id":3,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":null,"createdAt":"2026-05-10T00:33:07.726Z"},"createdAt":"2026-05-10T00:33:07.736Z","updatedAt":"2026-05-10T00:33:07.736Z"}],"meta":{"page":1,"pageSize":10,"total":3,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-10T00:59:16.901Z"}
+data                                                                                                     statusCode timestamp
+----                                                                                                     ---------- ---------
+@{id=1; status=confirmed; totalPrice=2847.00; items=System.Object[]; createdAt=2026-05-12T20:38:50.801Z}        200 2026-05-12T20:57:31.939Z
 ```
  
-### Тест кешування (Redis)
+### Тест insufficient stock
 ```text
-1) "products:{\"page\":1,\"pageSize\":10,\"sort\":\"createdAt\",\"order\":\"desc\",\"search\":\"mac\"}"  
-```
- 
-### Тест інвалідації кешу
-```text
-data                                                                                                                                                 statusCode timestamp
-----                                                                                                                                                 ---------- ---------
-@{id=31; name=Fresh Product; description=; price=42; stock=0; isActive=True; createdAt=2026-05-10T00:50:02.583Z; updatedAt=2026-05-10T00:50:02.583Z}        201 2026-05-10T00:50:02.596Z
+{"error":{"code":400,"message":"Insufficient stock for \"iPhone 16\": available 47, requested 99999","traceId":"b0f79270-2b57-48c1-bd1e-1fe1d12a5405"},"timestamp":"2026-05-12T21:19:15.214Z"}
 
-
-PS C:\Users\coolt\hlpf-env-setup> docker compose exec redis redis-cli KEYS "products:*"
-(empty array)
-```
 

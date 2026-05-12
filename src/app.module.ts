@@ -12,16 +12,16 @@ import { ProductsModule } from './products/products.module';
 import { CreateTables1700000001000 } from './migrations/1700000001000-CreateTables';
 import { AddIsActiveToProducts1774820052104 } from './migrations/1774820052104-AddIsActiveToProducts';
 import { CreateUsers1776708532574 } from './migrations/1776708532574-CreateUsers'
-
+import { CreateOrders1778615657570 } from './migrations/1778615657570-CreateOrders'
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { User } from './users/user.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module'
-
-
-
+import { Order } from './orders/entities/order.entity'
+import { OrderItem } from './orders/entities/order-item.entity'
+import { OrdersModule } from './orders/orders.module';
  
 @Module({
   imports: [
@@ -33,10 +33,10 @@ import { AuthModule } from './auth/auth.module'
   username: process.env.POSTGRES_USER as string,
   password: process.env.POSTGRES_PASSWORD as string,
   database: process.env.POSTGRES_DB as string,
-  entities: [Category, Product, User],      
+  entities: [Category, Product, User, Order, OrderItem],      
   synchronize: false,	// ВИМКНЕНО! Тільки міграції
   migrationsRun: true,   // автоматично запускати міграції при старті
-  migrations: [CreateTables1700000001000, AddIsActiveToProducts1774820052104, CreateUsers1776708532574],    
+  migrations: [CreateTables1700000001000, AddIsActiveToProducts1774820052104, CreateUsers1776708532574, CreateOrders1778615657570],    
 }),
 
 CacheModule.registerAsync({
@@ -61,6 +61,7 @@ CacheModule.registerAsync({
 	ProductsModule,
 	UsersModule,
 	AuthModule,
+  OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
